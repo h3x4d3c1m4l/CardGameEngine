@@ -1,0 +1,322 @@
+﻿@page "/"
+@implements IDisposable
+
+<style>
+    html, body, app {
+        height: 100%;
+    }
+
+    .hand {
+        overflow-x: auto;
+        display: grid;
+        grid-template-columns: repeat(1000, minmax(25px, max-content));
+    }
+
+    .card {
+        outline: none;
+        padding: 3px 0px 3px 3px;
+        margin: 5px 1px 3px 0px;
+        border: 1px solid #DDDDDD;
+    }
+
+    .card-selected {
+        box-shadow: 0 0 5px rgba(81, 203, 238, 1);
+        padding: 3px 0px 3px 3px;
+        margin: 5px 1px 3px 0px;
+        border: 1px solid rgba(81, 203, 238, 1);
+    }
+
+    .is-players-turn {
+        color: red;
+    }
+</style>
+<div class="container h-100">
+    @if (_game == null)
+    {
+        <div class="row h-100 justify-content-center align-items-center">
+            <div class="col-sm">
+                <input type="text" class="form-control" placeholder="Your name" @bind-value="_myName" />
+            </div>
+            <div class="col-sm">
+                <input type="text" class="form-control" placeholder="Join code" @bind-value="_joinCode" />
+                <button @onclick="e => JoinGame()" class="btn-primary">Join game</button>
+            </div>
+            <div class="col-sm">
+                <button @onclick="e => NewGame()" class="btn-primary">Start new game</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row d-flex flex-column bd-highlight mb-3">
+            <div class="p-2 bd-highlight">
+                <div class="col-sm">
+                    Last 10 events:
+                    <ol>
+                        @for (var i = _game.Events.Count - 1; i >= 0; i--)
+                        {
+                            <li>@_game.Events[i]</li>
+                        }
+                    </ol>
+                    <p>Playing <b>@(_game.PlayingCounterwise ? "counter clockwise" : "clockwise")</b>, <b>@_game.DrawingStack.Count</b> cards on drawing stock, code for joining is <b>@_guid</b></p>
+                </div>
+                <div class="col-sm">
+                    <ol>
+                        @foreach (Player p in _game.LinkedPlayers)
+                        {
+                            @if (p == _me)
+                            {
+                                <li class="@(p == _game.CurrentPlayer?.Value ? "is-players-turn" : null)">
+                                    Me
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="@(p == _game.CurrentPlayer?.Value ? "is-players-turn" : null)">
+                                    @p.Name, has <b>@p.Cards.Count</b> cards
+                                </li>
+                            }
+                        }
+                    </ol>
+                </div>
+            </div>
+            <div class="p-2 bd-highlight">
+                <svg width="88.32" height="127.33" @onclick="e => Pick()">
+                    <use xlink:href="/lib/svg-cards.svg#back" transform="scale(0.50)" fill="red" />
+                </svg>
+                <svg width="88.32" height="127.33">
+                    @((MarkupString)$"<use xlink:href=\"/lib/svg-cards.svg#{GetSvgCode(_game.PlayingStack.Peek())}\" transform=\"scale(0.50)\" />")
+                </svg>
+            </div>
+            <div class="p-2 bd-highlight">
+                @if (_game.GameWonBy != null)
+                {
+                    <h1>Game won by: @(_game.GameWonBy == _me ? "me!" : _game.GameWonBy.Name)</h1>
+                    <p>Please refresh for a new game ...</p>
+                }
+                else
+                {
+                    @if (_error != null)
+                    {
+                        <p style="color: red">@_error</p>
+                    }
+                    @if (SelectedCard?.Rank == FrenchPlayingCardRanks.Jack)
+                    {
+                        <button @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Spades)">♠️</button>
+                        <button @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Hearts)" style="color: red">♥</button>
+                        <button @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Diamonds)" style="color: red">♦</button>
+                        <button @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Clubs)">♣</button>
+                    }
+                    @if (_game.DrawnACard == _me)
+                    {
+                        <button @onclick="e => SkipTurn()">Skip turn</button>
+                    }
+                    <div class="hand">
+                        @{
+                            foreach (var c in _me.Cards)
+                            {
+                                <svg width="88.32" height="127.33" @onclick="e => PlayCard(c)" class="card @(SelectedCard == c ? "card-selected" : null)">
+                                    @((MarkupString)$"<use xlink:href=\"/lib/svg-cards.svg#{GetSvgCode(c)}\" transform=\"scale(0.50)\" />")
+                                </svg>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private static Dictionary<Guid, MauMauGame<Player>> RunningGames { get; set; } = new Dictionary<Guid, MauMauGame<Player>>();
+
+    private static IPlayingCardShuffler Shuffler = new PlayingCardRandomShuffler();
+
+    private static Standard52CardDeckFactory DeckFactory = new Standard52CardDeckFactory();
+
+    private MauMauGame<Player> _game;
+
+    private int currentCount = 0;
+
+    private Player _me;
+
+    private string _error;
+
+    private string _joinCode;
+
+    private Guid _guid;
+
+    private string _myName;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+    private void NewGame()
+    {
+        if (string.IsNullOrWhiteSpace(_myName))
+            return;
+
+        _me = new Player { Name = _myName };
+        _guid = Guid.NewGuid();
+        _game = new MauMauGame<Player>(DeckFactory, Shuffler, new List<Player> { _me }, options =>
+        {
+            options.AmountOfDecks = 3;
+        });
+        RunningGames.Add(_guid, _game);
+        _game.StateChanged += StateChanged;
+    }
+
+    private void JoinGame()
+    {
+        if (string.IsNullOrWhiteSpace(_myName))
+            return;
+
+        try
+        {
+            _me = new Player { Name = _myName };
+            _guid = Guid.Parse(_joinCode);
+            _game = RunningGames[_guid];
+            _game.AddPlayer(_me);
+            _game.StateChanged += StateChanged;
+        }
+        catch (Exception)
+        {
+
+        }
+    }
+
+    private void StateChanged(object source, EventArgs args)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private FrenchPlayingCard SelectedCard;
+
+    private void SkipTurn()
+    {
+        try
+        {
+            SelectedCard = null;
+            _game.PlayCard(_me, null, null);
+        }
+        catch (Exception ex)
+        {
+            if (ex is NotThePlayersTurnException)
+                _error = "Please wait for your turn!";
+            else
+                _error = "Error!";
+        }
+    }
+
+    private void PlayCard(FrenchPlayingCard card = null, FrenchPlayingCardSuits? newSuit = null)
+    {
+        _error = null;
+        if (SelectedCard == null || SelectedCard != card)
+        {
+            SelectedCard = card;
+        }
+        else if (SelectedCard == card && (SelectedCard.Rank != FrenchPlayingCardRanks.Jack || newSuit != null))
+        {
+            try
+            {
+                _game.PlayCard(_me, card, newSuit);
+            }
+            catch (Exception ex)
+            {
+                if (ex is CardNotAllowedException)
+                    _error = "This card is not allowed at this time!";
+                else if (ex is NotThePlayersTurnException)
+                    _error = "Please wait for your turn!";
+                else
+                    _error = "Error!";
+            }
+            SelectedCard = null;
+            StateHasChanged();
+        }
+    }
+
+    private void Pick()
+    {
+        try
+        {
+            SelectedCard = null;
+            _game.PickFromStack(_me);
+        }
+        catch (Exception ex)
+        {
+            if (ex is NotThePlayersTurnException)
+                _error = "Please wait for your turn!";
+            else
+                _error = "Error!";
+        }
+
+    }
+
+    private static string GetSvgCode(FrenchPlayingCard card)
+    {
+        if (card.IsJoker)
+        {
+            return "joker_red";
+        }
+        else
+        {
+            string part1 = null, part2 = null;
+            if (card.Suit == FrenchPlayingCardSuits.Clubs)
+                part1 = "club";
+            else if (card.Suit == FrenchPlayingCardSuits.Diamonds)
+                part1 = "diamond";
+            else if (card.Suit == FrenchPlayingCardSuits.Hearts)
+                part1 = "heart";
+            else if (card.Suit == FrenchPlayingCardSuits.Spades)
+                part1 = "spade";
+            else
+                throw new Exception();
+
+            if (card.Rank == FrenchPlayingCardRanks.Ace)
+                part2 = "1";
+            else if (card.Rank == FrenchPlayingCardRanks.Two)
+                part2 = "2";
+            else if (card.Rank == FrenchPlayingCardRanks.Three)
+                part2 = "3";
+            else if (card.Rank == FrenchPlayingCardRanks.Four)
+                part2 = "4";
+            else if (card.Rank == FrenchPlayingCardRanks.Five)
+                part2 = "5";
+            else if (card.Rank == FrenchPlayingCardRanks.Six)
+                part2 = "6";
+            else if (card.Rank == FrenchPlayingCardRanks.Seven)
+                part2 = "7";
+            else if (card.Rank == FrenchPlayingCardRanks.Eight)
+                part2 = "8";
+            else if (card.Rank == FrenchPlayingCardRanks.Nine)
+                part2 = "9";
+            else if (card.Rank == FrenchPlayingCardRanks.Ten)
+                part2 = "10";
+            else if (card.Rank == FrenchPlayingCardRanks.Jack)
+                part2 = "jack";
+            else if (card.Rank == FrenchPlayingCardRanks.Queen)
+                part2 = "queen";
+            else if (card.Rank == FrenchPlayingCardRanks.King)
+                part2 = "king";
+            else
+                throw new Exception();
+
+            return $"{part1}_{part2}";
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_game != null && _me != null)
+        {
+            _game.StateChanged -= StateChanged;
+            _game.RemovePlayer(_me);
+            if (!_game.LinkedPlayers.Any())
+            {
+                RunningGames.Remove(_guid);
+            }
+        }
+    }
+}

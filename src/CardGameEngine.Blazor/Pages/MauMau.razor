@@ -6,153 +6,177 @@
     }
 
     .hand {
-        overflow-x: auto;
-        display: grid;
+        overflow-x: scroll;
+        display: flex;
+        flex-wrap: wrap;
         grid-template-columns: repeat(1000, minmax(25px, max-content));
     }
 
     .card {
         outline: none;
         padding: 3px 0px 3px 3px;
-        margin: 5px 1px 3px 0px;
+        margin: 5px -50px 3px 0px;
         border: 1px solid #DDDDDD;
     }
-
     .card-selected {
         box-shadow: 0 0 5px rgba(81, 203, 238, 1);
         padding: 3px 0px 3px 3px;
-        margin: 5px 1px 3px 0px;
+        margin: 5px -50px 3px 0px;
         border: 1px solid rgba(81, 203, 238, 1);
     }
-
     .is-players-turn {
-        color: red;
+        color: green;
     }
 </style>
 <div class="container h-100">
-    @if (_game == null)
-    {
-        <div class="row h-100 justify-content-center align-items-center">
-            <div class="col-sm">
-                <input type="text" class="form-control" placeholder="Your name" @bind-value="_myName" />
-            </div>
-            <div class="col-sm">
-                <input type="text" class="form-control" placeholder="Join code" @bind-value="_joinCode" />
-                <button @onclick="e => JoinGame()" class="btn-primary">Join game</button>
-            </div>
-            <div class="col-sm">
-                <button @onclick="e => NewGame()" class="btn-primary">Start new game</button>
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="row d-flex flex-column bd-highlight mb-3">
-            <div class="p-2 bd-highlight">
-                <div class="col-sm">
-                    Last 10 events:
-                    <ol>
-                        @for (var i = _game.Events.Count - 1; i >= 0; i--)
-                        {
-                            <li>@_game.Events[i]</li>
-                        }
-                    </ol>
-                    <p>Playing <b>@(_game.PlayingCounterwise ? "counter clockwise" : "clockwise")</b>, <b>@_game.DrawingStack.Count</b> cards on drawing stock, code for joining is <b>@_guid</b></p>
-                </div>
-                <div class="col-sm">
-                    <ol>
-                        @foreach (Player p in _game.LinkedPlayers)
-                        {
-                            @if (p == _me)
-                            {
-                                <li class="@(p == _game.CurrentPlayer?.Value ? "is-players-turn" : null)">
-                                    Me
-                                </li>
-                            }
-                            else
-                            {
-                                <li class="@(p == _game.CurrentPlayer?.Value ? "is-players-turn" : null)">
-                                    @p.Name, has <b>@p.Cards.Count</b> cards
-                                </li>
-                            }
-                        }
-                    </ol>
-                </div>
-            </div>
-            <div class="p-2 bd-highlight">
-                @{
-                    FrenchPlayingCard lastPlayedCard = _game.PlayingStack.Peek();
-                }
-                <svg width="88.32" height="127.33" @onclick="e => Pick()">
-                    <use xlink:href="/lib/svg-cards.svg#back" transform="scale(0.50)" fill="red" />
-                </svg>
-                <svg width="88.32" height="127.33">
-                    @((MarkupString)$"<use xlink:href=\"/lib/svg-cards.svg#{GetSvgCode(lastPlayedCard)}\" transform=\"scale(0.50)\" />")
-                </svg>
-                @if(lastPlayedCard.HasRankJack)
-                {
-                    <text>Current playing color:</text>
-                    switch(_game.SuitForCurrentPlayer)
-                    {
-                        case FrenchPlayingCardSuits.Hearts:
-                        <span class="suit-logo suit-red">♥</span>
-                        break;
-                        case FrenchPlayingCardSuits.Diamonds:
-                        <span class="suit-logo suit-red">♦</span>
-                        break;
-                        case FrenchPlayingCardSuits.Spades:
-                        <span class="suit-logo">♠️</span>
-                        break;
-                        case FrenchPlayingCardSuits.Clubs:
-                        <span class="suit-logo">♣</span>
-                        break;
-                    }
-                }
-            </div>
-            <div class="p-2 bd-highlight">
-                @if (_game.GameWonBy != null)
-                {
-                    <h1>Game won by: @(_game.GameWonBy == _me ? "me!" : _game.GameWonBy.Name)</h1>
-                    @if(_game.GameWonBy == _me)
-                    {
-                        <p>Click this button to start a new game:</p>
-                        <button @onclick="e=>Reset()">reset</button>
-                    } else
-                    {
-                        <p>Wait for the winner to start a new game or return to the homescreen by refreshing...</p>
-                    }
-                }
-                else
-                {
-                    @if (_error != null)
-                    {
-                        <p style="color: red">@_error</p>
-                    }
-                    @if (SelectedCard?.Rank == FrenchPlayingCardRanks.Jack)
-                    {
-                        <button class="suit-logo" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Spades)">♠️</button>
-                        <button class="suit-logo suit-red" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Hearts)">♥</button>
-                        <button class="suit-logo suit-red" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Diamonds)">♦</button>
-                        <button class="suit-logo" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Clubs)">♣</button>
-                    }
-                    @if (_game.DrawnACard == _me)
-                    {
-                        <button @onclick="e => SkipTurn()">Skip turn</button>
-                    }
-                    <div class="hand">
-                        @{
-                            foreach (var c in _me.Cards)
-                            {
-                                <svg width="88.32" height="127.33" @onclick="e => PlayCard(c)" class="card @(SelectedCard == c ? "card-selected" : null)">
-                                    @((MarkupString)$"<use xlink:href=\"/lib/svg-cards.svg#{GetSvgCode(c)}\" transform=\"scale(0.50)\" />")
-                                </svg>
-                            }
-                        }
+    <div class="row">
+        <div class="col-12">
+            @if (_game == null)
+            {
+                <div class="row justify-content-center align-items-center">
+                    <div class="col-sm">
+                        <input type="text" class="form-control" placeholder="Your name" @bind-value="_myName" />
                     </div>
-                }
+                    <div class="col-sm">
+                        <input type="text" class="form-control" placeholder="Join code" @bind-value="_joinCode" />
+                        <button @onclick="e => JoinGame()" class="btn-primary">Join game</button>
+                    </div>
+                    <div class="col-sm">
+                        <button @onclick="e => NewGame()" class="btn-primary">Start new game</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row d-flex bd-highlight mb-3">
+                    <div class="col-md-6 col-sm-12">
+                        <div class="row">
+                            <div class="col-12 p-2 bd-highlight hidden-md">
+                                @{
+                                    bool myTurn = _game.CurrentPlayer?.Value == _me;
+                                }
+                                <span class="@(myTurn? "is-players-turn":string.Empty)">Current player: @(myTurn ? "me" : _game.CurrentPlayer?.Value.Name)</span>
+                            </div>
+                            <div class="col-12 p-2 bd-highlight">
+                                @{
+                                    FrenchPlayingCard lastPlayedCard = _game.PlayingStack.Peek();
+                                }
+                                <svg width="88.32" height="127.33" @onclick="e => Pick()">
+                                    <use xlink:href="/lib/svg-cards.svg#back" transform="scale(0.50)" fill="red" />
+                                </svg>
+                                <svg width="88.32" height="127.33">
+                                    @((MarkupString)$"<use xlink:href=\"/lib/svg-cards.svg#{GetSvgCode(lastPlayedCard)}\" transform=\"scale(0.50)\" />")
+                                </svg>
+                                @if(lastPlayedCard.HasRankJack)
+                                {
+                                    <text>Current playing color:</text>
+                                    switch(_game.SuitForCurrentPlayer)
+                                    {
+                                        case FrenchPlayingCardSuits.Hearts:
+                                        <span class="suit-logo suit-red">♥</span>
+                                        break;
+                                        case FrenchPlayingCardSuits.Diamonds:
+                                        <span class="suit-logo suit-red">♦</span>
+                                        break;
+                                        case FrenchPlayingCardSuits.Spades:
+                                        <span class="suit-logo">♠️</span>
+                                        break;
+                                        case FrenchPlayingCardSuits.Clubs:
+                                        <span class="suit-logo">♣</span>
+                                        break;
+                                    }
+                                }
+                            </div>
+                            <div class="col-12 p-2 bd-highlight">
+                                @if (_game.GameWonBy != null)
+                                {
+                                    <h1>Game won by: @(_game.GameWonBy == _me ? "me!" : _game.GameWonBy.Name)</h1>
+                                    @if(_game.GameWonBy == _me)
+                                    {
+                                        <p>Click this button to start a new game:</p>
+                                        <button @onclick="e=>Reset()">reset</button>
+                                    } else
+                                    {
+                                        <p>Wait for the winner to start a new game or return to the homescreen by refreshing...</p>
+                                    }
+                                }
+                                else
+                                {
+                                    @if (_error != null)
+                                    {
+                                        <p style="color: red">@_error</p>
+                                    }
+                                    @if (_game.DrawnACard == _me)
+                                    {
+                                        <button @onclick="e => SkipTurn()">Skip turn</button>
+                                    }
+                                    <div class="hand">
+                                        @{
+                                            foreach (var c in _me.Cards)
+                                            {
+                                                <svg width="88.32" height="127.33" @onclick="e => PlayCard(c)" class="card @(SelectedCard == c ? "card-selected" : null))">
+                                                    @((MarkupString)$"<use xlink:href=\"/lib/svg-cards.svg#{GetSvgCode(c)}\" transform=\"scale(0.50)\" />")
+                                                </svg>
+                                            }
+                                        }
+                                    </div>
+                                    @if (SelectedCard?.Rank == FrenchPlayingCardRanks.Jack)
+                                    {
+                                        <button class="suit-logo" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Spades)">♠️</button>
+                                        <button class="suit-logo suit-red" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Hearts)">♥</button>
+                                        <button class="suit-logo suit-red" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Diamonds)">♦</button>
+                                        <button class="suit-logo" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Clubs)">♣</button>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-sm-12 p-2 bd-highlight">
+                        <div class="col-sm">
+                            <p>Playing <b>@(_game.PlayingCounterwise ? "counter clockwise" : "clockwise")</b>, <b>@_game.DrawingStack.Count</b> cards on drawing stock, code for joining is <b>@_guid</b></p>
+                            <p>@if(_game.AmountOfCardsCurrentPlayerNeedsToDraw>0)
+                                {
+                                    <span style="font-size:@(8+_game.AmountOfCardsCurrentPlayerNeedsToDraw)px;">Amount of cards to draw: @_game.AmountOfCardsCurrentPlayerNeedsToDraw</span>
+                                }
+                                else{
+                                    <span style="font-size:10px;">&nbsp;</span>
+                                }
+                            </p>
+                        </div>
+                        <div class="col-sm">
+                            <ol>
+                                @foreach (Player p in _game.LinkedPlayers)
+                                {
+                                    @if (p == _me)
+                                    {
+                                        <li class="@(p == _game.CurrentPlayer?.Value ? "is-players-turn" : null)">
+                                            Me, I have <b>@p.Cards.Count</b> cards
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li class="@(p == _game.CurrentPlayer?.Value ? "is-players-turn" : null)">
+                                            @p.Name, has <b>@p.Cards.Count</b> cards @if(p.Cards.Count==1){<text>❗</text>}
+                                        </li>
+                                    }
+                                }
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <div class="col-sm">
+                            Last 10 events:
+                            <ol>
+                                @for (var i = _game.Events.Count - 1; i >= 0; i--)
+                                {
+                                    <li>@_game.Events[i]</li>
+                                }
+                            </ol>
+                    </div>
+                </div>
+            }
             </div>
-        </div>
-    }
+    </div>
 </div>
 
 @code {
@@ -191,6 +215,7 @@
         _game = new MauMauGame<Player>(DeckFactory, Shuffler, new List<Player> { _me }, options =>
         {
             options.AmountOfDecks = 3;
+            options.AmountOfCardsPerPlayer = 20;
         });
         RunningGames.Add(_guid, _game);
         _game.StateChanged += StateChanged;

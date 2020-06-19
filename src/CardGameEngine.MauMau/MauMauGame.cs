@@ -291,7 +291,7 @@ namespace CardGameEngine.MauMau
                 var card = ShufflePlayingStackToDrawingStackAndDrawCard();
                 player.Cards.Add(card);
             }
-            LinkedPlayers.AddLast((TPlayer) player);
+            LinkedPlayers.AddLast((TPlayer)player);
             AddEvent($"{player.Name} joined");
             StateChanged?.Invoke(this, null);
         }
@@ -302,6 +302,35 @@ namespace CardGameEngine.MauMau
                 AdvanceTurn();
             LinkedPlayers.Remove(player);
             AddEvent($"{player.Name} left");
+            StateChanged?.Invoke(this, null);
+        }
+
+        public void Reset()
+        {
+            var deckFactory = new Standard52CardDeckFactory();
+            var stock = new Stack<FrenchPlayingCard>();
+            for (var i = 0; i < _options.AmountOfDecks; i++)
+            {
+                var deck = deckFactory.GetDeck();
+                foreach (var c in deck)
+                    stock.Push(c);
+            }
+            _cardShuffler.Shuffle(stock);
+            DrawingStack = stock;
+            string wonByName = GameWonBy.Name;
+            GameWonBy = null;
+            foreach (var player in LinkedPlayers)
+            {
+                player.Cards = new List<FrenchPlayingCard>();
+                for (var i = 0; i < _options.AmountOfCardsPerPlayer; i++)
+                {
+                    var card = ShufflePlayingStackToDrawingStackAndDrawCard();
+                    player.Cards.Add(card);
+                }
+            }
+            Events = new List<string>();
+            Events.Add($"Game won by: {wonByName}");
+            Events.Add($"Started new game with: {CurrentPlayer.Value.Name}'s turn");
             StateChanged?.Invoke(this, null);
         }
     }

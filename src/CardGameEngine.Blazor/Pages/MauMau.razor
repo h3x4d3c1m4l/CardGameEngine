@@ -1,6 +1,5 @@
 ﻿@page "/"
 @implements IDisposable
-
 <style>
     html, body, app {
         height: 100%;
@@ -81,18 +80,47 @@
                 </div>
             </div>
             <div class="p-2 bd-highlight">
+                @{
+                    FrenchPlayingCard lastPlayedCard = _game.PlayingStack.Peek();
+                }
                 <svg width="88.32" height="127.33" @onclick="e => Pick()">
                     <use xlink:href="/lib/svg-cards.svg#back" transform="scale(0.50)" fill="red" />
                 </svg>
                 <svg width="88.32" height="127.33">
-                    @((MarkupString)$"<use xlink:href=\"/lib/svg-cards.svg#{GetSvgCode(_game.PlayingStack.Peek())}\" transform=\"scale(0.50)\" />")
+                    @((MarkupString)$"<use xlink:href=\"/lib/svg-cards.svg#{GetSvgCode(lastPlayedCard)}\" transform=\"scale(0.50)\" />")
                 </svg>
+                @if(lastPlayedCard.HasRankJack)
+                {
+                    <text>Current playing color:</text>
+                    switch(_game.SuitForCurrentPlayer)
+                    {
+                        case FrenchPlayingCardSuits.Hearts:
+                        <span class="suit-logo suit-red">♥</span>
+                        break;
+                        case FrenchPlayingCardSuits.Diamonds:
+                        <span class="suit-logo suit-red">♦</span>
+                        break;
+                        case FrenchPlayingCardSuits.Spades:
+                        <span class="suit-logo">♠️</span>
+                        break;
+                        case FrenchPlayingCardSuits.Clubs:
+                        <span class="suit-logo">♣</span>
+                        break;
+                    }
+                }
             </div>
             <div class="p-2 bd-highlight">
                 @if (_game.GameWonBy != null)
                 {
                     <h1>Game won by: @(_game.GameWonBy == _me ? "me!" : _game.GameWonBy.Name)</h1>
-                    <p>Please refresh for a new game ...</p>
+                    @if(_game.GameWonBy == _me)
+                    {
+                        <p>Click this button to start a new game:</p>
+                        <button @onclick="e=>Reset()">reset</button>
+                    } else
+                    {
+                        <p>Wait for the winner to start a new game or return to the homescreen by refreshing...</p>
+                    }
                 }
                 else
                 {
@@ -102,10 +130,10 @@
                     }
                     @if (SelectedCard?.Rank == FrenchPlayingCardRanks.Jack)
                     {
-                        <button @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Spades)">♠️</button>
-                        <button @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Hearts)" style="color: red">♥</button>
-                        <button @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Diamonds)" style="color: red">♦</button>
-                        <button @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Clubs)">♣</button>
+                        <button class="suit-logo" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Spades)">♠️</button>
+                        <button class="suit-logo suit-red" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Hearts)">♥</button>
+                        <button class="suit-logo suit-red" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Diamonds)">♦</button>
+                        <button class="suit-logo" @onclick="e => PlayCard(SelectedCard, FrenchPlayingCardSuits.Clubs)">♣</button>
                     }
                     @if (_game.DrawnACard == _me)
                     {
@@ -166,6 +194,11 @@
         });
         RunningGames.Add(_guid, _game);
         _game.StateChanged += StateChanged;
+    }
+
+    private void Reset()
+    {
+        _game.Reset();
     }
 
     private void JoinGame()

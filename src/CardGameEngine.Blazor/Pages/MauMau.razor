@@ -5,6 +5,14 @@
         height: 100%;
     }
 
+    .margin-top-30{
+        margin-top: 30px;
+    }
+
+    .text-align-center{
+        text-align: center;
+    }
+
     .hand {
         overflow-x: scroll;
         display: flex;
@@ -27,22 +35,25 @@
     .is-players-turn {
         color: green;
     }
+
 </style>
 <div class="container h-100">
     <div class="row">
         <div class="col-12">
             @if (_game == null)
             {
-                <div class="row justify-content-center align-items-center">
+                <div class="row justify-content-center">
                     <div class="col-sm">
-                        <input type="text" class="form-control" placeholder="Your name" @bind-value="_myName" />
+                        <input type="text" class="form-control margin-top-30" placeholder="Your name" @bind-value="_myName" />
                     </div>
                     <div class="col-sm">
-                        <input type="text" class="form-control" placeholder="Join code" @bind-value="_joinCode" />
-                        <button @onclick="e => JoinGame()" class="btn-primary">Join game</button>
+                        <input type="text" class="form-control margin-top-30" placeholder="Join code" @bind-value="_joinCode" />
+                        <div class="text-align-center">
+                        <button @onclick="e => JoinGame()" class="btn-primary margin-top-30">Join game</button>
+                        </div>
                     </div>
                     <div class="col-sm">
-                        <button @onclick="e => NewGame()" class="btn-primary">Start new game</button>
+                        <button @onclick="e => NewGame()" class="btn-primary margin-top-30">Start new game</button>
                     </div>
                 </div>
             }

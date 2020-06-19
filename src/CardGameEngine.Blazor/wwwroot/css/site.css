@@ -191,3 +191,10 @@ app {
             display: none;
     }
 }
+
+@media(min-width: 1460px)
+{
+    .container{
+        max-width: 1390px;
+    }
+}

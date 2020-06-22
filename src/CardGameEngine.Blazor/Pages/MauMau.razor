@@ -226,7 +226,7 @@
         _game = new MauMauGame<Player>(DeckFactory, Shuffler, new List<Player> { _me }, options =>
         {
             options.AmountOfDecks = 3;
-            options.AmountOfCardsPerPlayer = 20;
+            options.AmountOfCardsPerPlayer = 7;
         });
         RunningGames.Add(_guid, _game);
         _game.StateChanged += StateChanged;

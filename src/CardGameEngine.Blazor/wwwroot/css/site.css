@@ -187,4 +187,14 @@ app {
         /* Never collapse the sidebar for wide screens */
         display: block;
     }
+    .hidden-md {
+            display: none;
+    }
+}
+
+@media(min-width: 1460px)
+{
+    .container{
+        max-width: 1390px;
+    }
 }

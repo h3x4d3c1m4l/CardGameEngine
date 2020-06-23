@@ -258,7 +258,7 @@ namespace CardGameEngine.MauMau
                 if (!forceOneCard)
                 {
                     DrawnACard = player;
-                    AddEvent($"{player.Name} has drawen a card");
+                    AddEvent($"{player.Name} drew a card");
                 }
             }
 

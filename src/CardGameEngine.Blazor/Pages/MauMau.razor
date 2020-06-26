@@ -5,11 +5,11 @@
         height: 100%;
     }
 
-    .margin-top-30{
+    .margin-top-30 {
         margin-top: 30px;
     }
 
-    .text-align-center{
+    .text-align-center {
         text-align: center;
     }
 
@@ -26,16 +26,26 @@
         margin: 5px -50px 3px 0px;
         border: 1px solid #DDDDDD;
     }
+
     .card-selected {
         box-shadow: 0 0 5px rgba(81, 203, 238, 1);
         padding: 3px 0px 3px 3px;
         margin: 5px -50px 3px 0px;
         border: 1px solid rgba(81, 203, 238, 1);
     }
+
     .is-players-turn {
         color: green;
     }
 
+    .last-card {
+        font-weight: bold;
+    }
+
+    .player-lastcard {
+        color: red;
+        font-weight: bold;
+    }
 </style>
 <div class="container h-100">
     <div class="row">
@@ -49,7 +59,7 @@
                     <div class="col-sm">
                         <input type="text" class="form-control margin-top-30" placeholder="Join code" @bind-value="_joinCode" />
                         <div class="text-align-center">
-                        <button @onclick="e => JoinGame()" class="btn-primary margin-top-30">Join game</button>
+                            <button @onclick="e => JoinGame()" class="btn-primary margin-top-30">Join game</button>
                         </div>
                     </div>
                     <div class="col-sm">
@@ -72,29 +82,29 @@
                                 @{
                                     FrenchPlayingCard lastPlayedCard = _game.PlayingStack.Peek();
                                 }
-                                <svg width="88.32" height="127.33" @onclick="e => Pick()">
+                                <svg width="88.32" height="127.33" @ontouchstart="e => Pick()" @onclick="e => Pick()">
                                     <use xlink:href="/lib/svg-cards.svg#back" transform="scale(0.50)" fill="red" />
                                 </svg>
                                 <svg width="88.32" height="127.33">
                                     @((MarkupString)$"<use xlink:href=\"/lib/svg-cards.svg#{GetSvgCode(lastPlayedCard)}\" transform=\"scale(0.50)\" />")
                                 </svg>
-                                @if(lastPlayedCard.HasRankJack)
+                                @if (lastPlayedCard.HasRankJack)
                                 {
                                     <text>Current playing color:</text>
-                                    switch(_game.SuitForCurrentPlayer)
+                                    switch (_game.SuitForCurrentPlayer)
                                     {
                                         case FrenchPlayingCardSuits.Hearts:
-                                        <span class="suit-logo suit-red">♥</span>
-                                        break;
+                                            <span class="suit-logo suit-red">♥</span>
+                                            break;
                                         case FrenchPlayingCardSuits.Diamonds:
-                                        <span class="suit-logo suit-red">♦</span>
-                                        break;
+                                            <span class="suit-logo suit-red">♦</span>
+                                            break;
                                         case FrenchPlayingCardSuits.Spades:
-                                        <span class="suit-logo">♠️</span>
-                                        break;
+                                            <span class="suit-logo">♠️</span>
+                                            break;
                                         case FrenchPlayingCardSuits.Clubs:
-                                        <span class="suit-logo">♣</span>
-                                        break;
+                                            <span class="suit-logo">♣</span>
+                                            break;
                                     }
                                 }
                             </div>
@@ -102,11 +112,12 @@
                                 @if (_game.GameWonBy != null)
                                 {
                                     <h1>Game won by: @(_game.GameWonBy == _me ? "me!" : _game.GameWonBy.Name)</h1>
-                                    @if(_game.GameWonBy == _me)
+                                    @if (_game.GameWonBy == _me)
                                     {
                                         <p>Click this button to start a new game:</p>
                                         <button @onclick="e=>Reset()">reset</button>
-                                    } else
+                                    }
+                                    else
                                     {
                                         <p>Wait for the winner to start a new game or return to the homescreen by refreshing...</p>
                                     }
@@ -125,7 +136,7 @@
                                         @{
                                             foreach (var c in _me.Cards)
                                             {
-                                                <svg width="88.32" height="127.33" @onclick="e => PlayCard(c)" class="card @(SelectedCard == c ? "card-selected" : null))">
+                                                <svg width="88.32" height="127.33" @ontouchstart="e => PlayCard(c)" @onclick="e => PlayCard(c)" class="card @(SelectedCard == c ? "card-selected" : null))">
                                                     @((MarkupString)$"<use xlink:href=\"/lib/svg-cards.svg#{GetSvgCode(c)}\" transform=\"scale(0.50)\" />")
                                                 </svg>
                                             }
@@ -145,11 +156,13 @@
                     <div class="col-md-6 col-sm-12 p-2 bd-highlight">
                         <div class="col-sm">
                             <p>Playing <b>@(_game.PlayingCounterwise ? "counter clockwise" : "clockwise")</b>, <b>@_game.DrawingStack.Count</b> cards on drawing stock, code for joining is <b>@_guid</b></p>
-                            <p>@if(_game.AmountOfCardsCurrentPlayerNeedsToDraw>0)
+                            <p>
+                                @if (_game.AmountOfCardsCurrentPlayerNeedsToDraw > 0)
                                 {
                                     <span style="font-size:@(8+_game.AmountOfCardsCurrentPlayerNeedsToDraw)px;">Amount of cards to draw: @_game.AmountOfCardsCurrentPlayerNeedsToDraw</span>
                                 }
-                                else{
+                                else
+                                {
                                     <span style="font-size:10px;">&nbsp;</span>
                                 }
                             </p>
@@ -160,33 +173,33 @@
                                 {
                                     @if (p == _me)
                                     {
-                                        <li class="@(p == _game.CurrentPlayer?.Value ? "is-players-turn" : null)">
+                                        <li class="@GetCssClassForPlayer(p)">
                                             Me, I have <b>@p.Cards.Count</b> cards
                                         </li>
                                     }
                                     else
                                     {
-                                        <li class="@(p == _game.CurrentPlayer?.Value ? "is-players-turn" : null)">
-                                            @p.Name, has <b>@p.Cards.Count</b> cards @if(p.Cards.Count==1){<text>❗</text>}
+                                        <li class="@GetCssClassForPlayer(p)">
+                                            @p.Name, has <b>@p.Cards.Count</b> cards @if (p.Cards.Count == 1)
+                                            {<text>❗</text>}
                                         </li>
                                     }
                                 }
                             </ol>
                         </div>
                     </div>
-                    
                     <div class="col-sm">
-                            Last 10 events:
-                            <ol>
-                                @for (var i = _game.Events.Count - 1; i >= 0; i--)
-                                {
-                                    <li>@_game.Events[i]</li>
-                                }
-                            </ol>
+                        Last 10 events:
+                        <ol>
+                            @for (var i = _game.Events.Count - 1; i >= 0; i--)
+                            {
+                                <li>@_game.Events[i]</li>
+                            }
+                        </ol>
                     </div>
                 </div>
             }
-            </div>
+        </div>
     </div>
 </div>
 
@@ -210,6 +223,29 @@
     private Guid _guid;
 
     private string _myName;
+
+    private string GetCssClassForPlayer(Player player)
+    {
+        string cssClass = string.Empty;
+
+        if (player == _game.CurrentPlayer?.Value)
+        {
+            cssClass = "is-players-turn";
+        }
+
+        if (player.Cards.Count == 1)
+        {
+            if (string.IsNullOrWhiteSpace(cssClass))
+            {
+                cssClass = "last-card";
+            }
+            else
+            {
+                cssClass += " last-card";
+            }
+        }
+        return cssClass;
+    }
 
     private void IncrementCount()
     {

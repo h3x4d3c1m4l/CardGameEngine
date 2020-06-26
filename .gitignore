@@ -3,3 +3,5 @@ bin/
 obj/
 *.user
 PublishProfiles/
+.config/
+.vscode/

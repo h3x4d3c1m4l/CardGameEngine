@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\icons\right-arrow.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CardGameEngine.MauMau\CardGameEngine.MauMau.csproj" />
     <ProjectReference Include="..\CardGameEngine\CardGameEngine.csproj" />
   </ItemGroup>

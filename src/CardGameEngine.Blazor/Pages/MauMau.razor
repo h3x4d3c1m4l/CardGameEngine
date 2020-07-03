@@ -34,8 +34,20 @@
         border: 1px solid rgba(81, 203, 238, 1);
     }
 
-    .is-players-turn {
-        color: green;
+    .is-players-turn:before {
+        content: '';
+        background-image: url('/icons/right-arrow.svg');
+        background-size: 20px;
+        width: 20px;
+        height: 20px;
+        position: absolute;
+        left: -30px;
+        top: 2px;
+    }
+
+    ul.playerslist li {
+        position: relative;
+        list-style: none;
     }
 
     .last-card {
@@ -111,6 +123,9 @@
                             <div class="col-12 p-2 bd-highlight">
                                 @if (_game.GameWonBy != null)
                                 {
+                                    <audio controls="controls" autoplay style="display:none;">
+                                        <source src="@GetRandomSoundEffect()" type="audio/mp3" />
+                                    </audio>
                                     <h1>Game won by: @(_game.GameWonBy == _me ? "me!" : _game.GameWonBy.Name)</h1>
                                     @if (_game.GameWonBy == _me)
                                     {
@@ -168,24 +183,35 @@
                             </p>
                         </div>
                         <div class="col-sm">
-                            <ol>
+                            @if (_game.LinkedPlayers.Any(x => x.Cards.Count == 1))
+                            {
+                                <audio controls="controls" autoplay style="display:none;">
+                                    <source src="/sounds/attention.mp3" type="audio/mp3" />
+                                </audio>
+                            }
+                            <ul class="playerslist">
                                 @foreach (Player p in _game.LinkedPlayers)
                                 {
                                     @if (p == _me)
                                     {
                                         <li class="@GetCssClassForPlayer(p)">
-                                            Me, I have <b>@p.Cards.Count</b> cards
+                                            Me, I have <b>@p.Cards.Count</b> @{ if (p.Cards.Count > 1)
+                                                { <text>cards</text> }
+                                            else
+                                            { <text>card</text> }}
                                         </li>
                                     }
                                     else
                                     {
                                         <li class="@GetCssClassForPlayer(p)">
-                                            @p.Name, has <b>@p.Cards.Count</b> cards @if (p.Cards.Count == 1)
-                                            {<text>❗</text>}
+                                            @p.Name, has <b>@p.Cards.Count</b>@if (p.Cards.Count == 1)
+                                            {<text> card❗</text>}
+                                        else
+                                        { <text> cards</text>}
                                         </li>
                                     }
                                 }
-                            </ol>
+                            </ul>
                         </div>
                     </div>
                     <div class="col-sm">
@@ -214,6 +240,8 @@
 
     private int currentCount = 0;
 
+    private bool _soundPlayed = false;
+
     private Player _me;
 
     private string _error;
@@ -223,6 +251,22 @@
     private Guid _guid;
 
     private string _myName;
+
+    private string GetRandomSoundEffect()
+    {
+        if (!_soundPlayed)
+        {
+            string soundEffectPath = string.Empty;
+            string[] soundEffects = new string[] { "/Alweer_een_winnaar.mp3", "/GOEDZO_KNUL.mp3", "/haha.mp3", "/Yieehoe.mp3", "/Game_Over.mp3" };
+            int idx = new Random().Next(soundEffects.Length);
+
+            soundEffectPath = soundEffects[idx];
+            _soundPlayed = true;
+
+            return "/sounds" + soundEffectPath;
+        }
+        return string.Empty;
+    }
 
     private string GetCssClassForPlayer(Player player)
     {
@@ -270,6 +314,7 @@
 
     private void Reset()
     {
+        _soundPlayed = false;
         _game.Reset();
     }
 

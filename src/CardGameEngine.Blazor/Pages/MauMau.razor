@@ -123,9 +123,7 @@
                             <div class="col-12 p-2 bd-highlight">
                                 @if (_game.GameWonBy != null)
                                 {
-                                    <audio controls="controls" autoplay style="display:none;">
-                                        <source src="@GetRandomSoundEffect()" type="audio/mp3" />
-                                    </audio>
+                                    @((MarkupString)RenderSound("win"))
                                     <h1>Game won by: @(_game.GameWonBy == _me ? "me!" : _game.GameWonBy.Name)</h1>
                                     @if (_game.GameWonBy == _me)
                                     {
@@ -185,9 +183,7 @@
                         <div class="col-sm">
                             @if (_game.LinkedPlayers.Any(x => x.Cards.Count == 1))
                             {
-                                <audio controls="controls" autoplay style="display:none;">
-                                    <source src="/sounds/attention.mp3" type="audio/mp3" />
-                                </audio>
+                                @((MarkupString)RenderSound("alarm"))
                             }
                             <ul class="playerslist">
                                 @foreach (Player p in _game.LinkedPlayers)
@@ -252,18 +248,52 @@
 
     private string _myName;
 
-    private string GetRandomSoundEffect()
+    private string RenderSound(string type)
+    {
+        string sourceFilePath = string.Empty;
+
+        if (type == "alarm")
+        {
+            sourceFilePath = GetRandomSoundEffect("alarm");
+        }
+        else
+        {
+            sourceFilePath = GetRandomSoundEffect("win");
+        }
+
+        if (!string.IsNullOrWhiteSpace(sourceFilePath))
+        {
+            return "<audio controls='controls' autoplay style='display:none;' id='" + type + "'><source src=" + sourceFilePath + " type='audio/mp3' /></audio>";
+        }
+        else
+        {
+            return string.Empty;
+        }
+    }
+
+    private string GetRandomSoundEffect(string type)
     {
         if (!_soundPlayed)
         {
             string soundEffectPath = string.Empty;
-            string[] soundEffects = new string[] { "/Alweer_een_winnaar.mp3", "/GOEDZO_KNUL.mp3", "/haha.mp3", "/Yieehoe.mp3", "/Game_Over.mp3" };
+            string[] soundEffects = new string[] { };
+            string mapPath = "/sounds/" + type;
+
+            if (type == "alarm")
+            {
+                soundEffects = new string[] { "/alarm.mp3", "/alarm_1.mp3", "/alarm_3.mp3", "/attention.mp3", "/buzzer.mp3", "/CarAlarm.mp3", "/clown-horn.mp3", "/error.mp3", "/notification_msg_04.mp3", "/smb_warning.mp3", "/warning.mp3" };
+            }
+            else
+            {
+                soundEffects = new string[] { "/Alweer_een_winnaar.mp3", "/GOEDZO_KNUL.mp3", "/haha.mp3", "/Yieehoe.mp3", "/Game_Over.mp3", "item-found.mp3", "/Juichen.mp3", "/Rick.mp3", "/smb.mp3", "surprise-motherfucker.mp3", "/tada.mp3", "tros.mp3", "victoryff.swf.mp3", "/why-you-heff-to-be-mad.mp3", "wow.mp3", "yeah.mp3" };
+            }
+
             int idx = new Random().Next(soundEffects.Length);
 
             soundEffectPath = soundEffects[idx];
             _soundPlayed = true;
 
-            return "/sounds" + soundEffectPath;
+            return mapPath + soundEffectPath;
         }
         return string.Empty;
     }
